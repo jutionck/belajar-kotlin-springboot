@@ -6,10 +6,36 @@ Start project here : https://start.spring.io/
 
 ![Screenshot](create-project.png)
 
-## Project Design
-`link: `
+## Create Db, this db creates with Docker Compose
+1. Create a file `docker-compose.yml`
+2. Copy this script :
+   ```
+   version: '3.5'
+   
+   services:
+     kotlin-restful-api-postgres:
+       container_name: "kotlin-restful-api-postgres"
+       image: postgres:latest
+       ports:
+         - 5432:5432
+       environment:
+         POSTGRES_PASSWORD: kotlin
+         POSTGRES_USER: kotlin
+         POSTGRES_DB: restful-api
 
-
+   ```
+   For default postgres port is `5432`.
+3. Type this for process file `docker-compose.yml` :
+   ```
+   docker-compose -f docker-compose.yml up -d   
+    ```
+4. Check :
+   ```
+    docker container ls
+    docker container logs kotlin-restful-api-postgres
+    ```
+5. Open Database in Intellij:
+![Screenshot](open-db-intellij.png)
 ## API Spec
 
 ### Create Customer
