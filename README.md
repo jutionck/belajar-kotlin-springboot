@@ -36,6 +36,10 @@ Start project here : https://start.spring.io/
     ```
 5. Open Database in Intellij:
 ![Screenshot](open-db-intellij.png)
+
+6. Configuration and if successfully:
+![Screenshot](restful_api.png)
+
 ## API Spec
 
 ### Create Customer

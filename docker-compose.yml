@@ -5,7 +5,7 @@ services:
     container_name: "kotlin-restful-api-postgres"
     image: postgres:latest
     ports:
-      - 5433:5433
+      - 5434:5434
     environment:
       POSTGRES_PASSWORD: kotlin
       POSTGRES_USER: kotlin
