@@ -40,6 +40,141 @@ Start project here : https://start.spring.io/
 6. Configuration and if successfully:
 ![Screenshot](restful_api.png)
 
+7. Setting `application.properties`
+   ```
+    spring.datasource.data-username=postgres
+    spring.datasource.data-password=12345qwe
+    spring.datasource.url=jdbc:postgresql://localhost:5432/restful_api
+    
+    spring.jpa.hibernate.ddl-auto=update
+
+    ``` 
+
+## Structure Project
+### Create Customer
+1. Create a package `entity` in `com.enigmacamp.kotlin.kotlinresapi`
+2. Create a class `Customer` in package `entity`
+   ```kotlin
+   @Entity
+   @Table(name = "m_customer")
+   data class Customer (
+   
+           @Id
+           val id: String,
+   
+           @Column(name = "first_name")
+           val firstName: String,
+   
+           @Column(name = "last_name")
+           val lastName: String,
+   
+           @Column(name = "address")
+           val address: String,
+   
+           @Column(name = "created_at")
+           val createdAt: Date,
+   
+           @Column(name = "updated_at")
+           val updatedAt: Date
+   )
+    ```
+3. Create a package `respository` in `com.enigmacamp.kotlin.kotlinresapi`
+4. Create a interface `CustomerRepostory`
+   ```kotlin
+    interface CustomerRepository: JpaRepository<Customer, String> {}
+    ```
+5. Create a package `model` in `com.enigmacamp.kotlin.kotlinresapi`
+6. Create a class `CreateCustomerRequest`
+   ```kotlin
+    data class CreateCustomerRequest (
+    
+            val id: String,
+    
+            val firstName: String,
+    
+            val lastName: String,
+    
+            val address: String,
+    )
+   ```
+7. Create a class `CustomerResponse`
+   ```kotlin
+    data class CustomerResponse (
+    
+            val id: String,
+    
+            val firstName: String,
+    
+            val lastName: String,
+    
+            val address: String,
+    
+            val createdAt: Date,
+    
+            val updatedAt: Date?
+    )
+   ```
+8. Create a package `service` in `com.enigmacamp.kotlin.kotlinresapi`
+9. Create a interface `CustomerService`
+   ```kotlin
+    interface CustomerService {
+    
+        fun create(createCustomerRequest: CreateCustomerRequest): CustomerResponse
+    }
+   ```
+10. Create a package `impl` in package `service` and create class `CustomerServiceImpl`
+       ```kotlin
+        @Service
+        class CustomerServiceImpl(val customerRepository: CustomerRepository): CustomerService {
+        
+            override fun create(createCustomerRequest: CreateCustomerRequest): CustomerResponse {
+        
+                val customer = Customer (
+                        id = createCustomerRequest.id,
+                        firstName = createCustomerRequest.firstName,
+                        lastName = createCustomerRequest.lastName,
+                        address = createCustomerRequest.address,
+                        createdAt = Date(),
+                        updatedAt = null
+                )
+        
+                customerRepository.save(customer);
+        
+                return CustomerResponse(
+                        id = customer.id,
+                        firstName = customer.firstName,
+                        lastName = customer.lastName,
+                        address = customer.address,
+                        createdAt = customer.createdAt,
+                        updatedAt = customer.updatedAt
+                )
+            }
+        }
+       ```
+11. Create a package `controller` in package `com.enigmacamp.kotlin.kotlinresapi` and create class `CustomerController`
+       ```kotlin
+        @RestController
+        @RequestMapping(value = ["/api/customers"])
+        class CustomerController(val customerService: CustomerService) {
+        
+            @PostMapping(
+                    value = ["/"],
+                    produces = ["application/json"],
+                    consumes = ["application/json"]
+            )
+            fun createCustomer(@RequestBody body: CreateCustomerRequest): WebResponse<CustomerResponse> {
+                val customerResponse =  customerService.create(body)
+                return WebResponse(
+                        code = 200,
+                        status = "OK",
+                        data = customerResponse
+                )
+            }
+        }
+
+       ```    
+12. Open main file for running project
+    
 ## API Spec
 
 ### Create Customer
