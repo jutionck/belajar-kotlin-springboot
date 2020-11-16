@@ -60,6 +60,12 @@ Start project here : https://start.spring.io/
    data class Customer (
    
            @Id
+           @GeneratedValue(generator = "UUID")
+           @GenericGenerator(
+           name = "UUID",
+                   strategy = "org.hibernate.id.UUIDGenerator",
+           )
+           @Column(name = "id", updatable = false, nullable = false)
            val id: String,
    
            @Column(name = "first_name")
