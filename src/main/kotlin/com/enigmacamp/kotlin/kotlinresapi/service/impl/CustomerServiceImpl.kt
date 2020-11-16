@@ -5,19 +5,25 @@ import com.enigmacamp.kotlin.kotlinresapi.model.CreateCustomerRequest
 import com.enigmacamp.kotlin.kotlinresapi.model.CustomerResponse
 import com.enigmacamp.kotlin.kotlinresapi.repository.CustomerRepository
 import com.enigmacamp.kotlin.kotlinresapi.service.CustomerService
+import com.enigmacamp.kotlin.kotlinresapi.utils.ValidationUtil
 import org.springframework.stereotype.Service
 import java.util.*
 
 @Service
-class CustomerServiceImpl(val customerRepository: CustomerRepository): CustomerService {
+class CustomerServiceImpl(
+        val customerRepository: CustomerRepository,
+        val validationUtil: ValidationUtil
+    ): CustomerService {
 
     override fun create(createCustomerRequest: CreateCustomerRequest): CustomerResponse {
 
+        validationUtil.validate(createCustomerRequest);
+
         val customer = Customer (
-                id = createCustomerRequest.id,
-                firstName = createCustomerRequest.firstName,
-                lastName = createCustomerRequest.lastName,
-                address = createCustomerRequest.address,
+                id = createCustomerRequest.id!!,
+                firstName = createCustomerRequest.firstName!!,
+                lastName = createCustomerRequest.lastName!!,
+                address = createCustomerRequest.address!!,
                 createdAt = Date(),
                 updatedAt = null
         )
