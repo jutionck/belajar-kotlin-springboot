@@ -17,4 +17,13 @@ class ErrorController {
         )
     }
 
+    @ExceptionHandler(value = [NotFoundException::class])
+    fun notFound(notFoundException: NotFoundException): WebResponse<String> {
+        return WebResponse(
+                code = 400,
+                status = "NOT FOUND",
+                data = "Not Found"
+        )
+    }
+
 }
