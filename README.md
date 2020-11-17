@@ -565,10 +565,27 @@ Response:
 ```json
   {
     "code": "Number",
-    "Status": "String"   
+    "Status": "String",
+    "Data": [
+      {
+          "id": "String",
+          "firstName": "String",
+          "lastName": "String",
+          "address": "String",
+          "createdAt": "Date",
+          "updatedAt": "Date"
+      },  
+      {
+        "id": "String",
+        "firstName": "String",
+        "lastName": "String",
+        "address": "String",
+        "createdAt": "Date",
+        "updatedAt": "Date"
+      }  
+    ]    
   }
   ```
-
 
 ### Delete Customer
 - Request: DELETE
