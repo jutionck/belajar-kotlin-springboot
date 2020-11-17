@@ -1,18 +1,18 @@
 # Simple Kotlin REST API
 
-![Screenshot](enigma-logo.jpeg)
+![Screenshot](img/enigma-logo.jpeg)
 
 Start project here : https://start.spring.io/
 
-![Screenshot](create-project.png)
+![Screenshot](img/create-project.png)
 
 ## Create DB
 1. Create database `restful_api` on your PostgreSQL app.
 2. Open database in Intellij:
-![Screenshot](open-db-intellij.png)
+![Screenshot](img/open-db-intellij.png)
 
 6. Configuration and if successfully:
-![Screenshot](restful_api.png)
+![Screenshot](img/restful_api.png)
 
 7. Setting `application.properties`
    ```
