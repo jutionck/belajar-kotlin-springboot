@@ -6,35 +6,9 @@ Start project here : https://start.spring.io/
 
 ![Screenshot](create-project.png)
 
-## Create Db, this db creates with Docker Compose
-1. Create a file `docker-compose.yml`
-2. Copy this script :
-   ```
-   version: '3.5'
-   
-   services:
-     kotlin-restful-api-postgres:
-       container_name: "kotlin-restful-api-postgres"
-       image: postgres:latest
-       ports:
-         - 5432:5432
-       environment:
-         POSTGRES_PASSWORD: kotlin
-         POSTGRES_USER: kotlin
-         POSTGRES_DB: restful-api
-
-   ```
-   For default postgres port is `5432`.
-3. Type this for process file `docker-compose.yml` :
-   ```
-   docker-compose -f docker-compose.yml up -d   
-    ```
-4. Check :
-   ```
-    docker container ls
-    docker container logs kotlin-restful-api-postgres
-    ```
-5. Open Database in Intellij:
+## Create DB
+1. Create database `restful_api` on your PostgreSQL app.
+2. Open database in Intellij:
 ![Screenshot](open-db-intellij.png)
 
 6. Configuration and if successfully:
@@ -42,11 +16,18 @@ Start project here : https://start.spring.io/
 
 7. Setting `application.properties`
    ```
-    spring.datasource.data-username=postgres
-    spring.datasource.data-password=12345qwe
-    spring.datasource.url=jdbc:postgresql://localhost:5432/restful_api
+    ## default connection pool
+    spring.datasource.hikari.connectionTimeout=20000
+    spring.datasource.hikari.maximumPoolSize=5
     
+    ## PostgreSQL
+    spring.datasource.url=jdbc:postgresql://localhost:5432/restful_api
+    spring.datasource.username=postgres
+    spring.datasource.password=12345qwe
+    
+    #drop n create table again, good for testing, comment this in production
     spring.jpa.hibernate.ddl-auto=update
+
 
     ``` 
 
@@ -179,7 +160,310 @@ Start project here : https://start.spring.io/
         }
 
        ```    
-12. Open main file for running project
+12. Check Point #1
+    
+### Create Customer (Validation Input)
+1. Create a new package `utils` and create files `ValidationUtil`,`ErrorController`,`NotFoundException`
+2. `ValidationUtil`
+    ```kotlin
+   @Component
+   class ValidationUtil(val validator: Validator) {
+       fun validate(any: Any) {
+           val result =  validator.validate(any);
+           if(result.size != 0) {
+               throw ConstraintViolationException(result);
+           }
+   
+       }
+   }
+   ```    
+3. `NotFoundException`
+    ```kotlin
+    class NotFoundException: Exception()  {
+    
+    }
+    ``` 
+4. `ErrorController`
+    ```kotlin
+    @RestControllerAdvice
+    class ErrorController {
+    
+        @ExceptionHandler(value = [ConstraintViolationException::class])
+        fun validationHandler(constrainViolationExecption: ConstraintViolationException): WebResponse<String> {
+            return WebResponse(
+                    code = 400,
+                    status = "BAD REQUEST",
+                    data = constrainViolationExecption.message!!
+            )
+        }
+    
+        @ExceptionHandler(value = [NotFoundException::class])
+        fun notFound(notFoundException: NotFoundException): WebResponse<String> {
+            return WebResponse(
+                    code = 400,
+                    status = "NOT FOUND",
+                    data = "Not Found"
+            )
+        }
+    }
+    ``` 
+5. Modify `CreateCustomerRequest`:
+   ```kotlin
+   @field:NotBlank
+   val id: String?,
+
+   @field:NotBlank
+   val firstName: String?,
+
+   @field:NotBlank
+   val lastName: String?,
+
+   @field:NotBlank
+   val address: String?,
+   ```      
+6. Modify `CustomerServiceImpl`
+   ```kotlin
+    @Service
+    class CustomerServiceImpl(
+            val customerRepository: CustomerRepository,
+            val validationUtil: ValidationUtil
+    ): CustomerService {
+    
+        override fun create(createCustomerRequest: CreateCustomerRequest): CustomerResponse {
+    
+            validationUtil.validate(createCustomerRequest);
+    
+            val customer = Customer (
+                    id = createCustomerRequest.id!!,
+                    firstName = createCustomerRequest.firstName!!,
+                    lastName = createCustomerRequest.lastName!!,
+                    address = createCustomerRequest.address!!,
+                    createdAt = Date(),
+                    updatedAt = null
+            )
+    
+            customerRepository.save(customer);
+    
+            return CustomerResponse(
+                   id = customer.id,
+                   firstName = customer.firstName,
+                   lastName = customer.lastName,
+                   address = customer.address,
+                   createdAt = customer.createdAt,
+                   updatedAt = customer.updatedAt
+            )
+        }
+   }
+    ```       
+7. Check Point #2
+        
+### Get Customer
+1. Modify `CustomerService` and add code this
+   ```kotlin
+    fun get(id: String): CustomerResponse
+    ```         
+2. Modify `CustomerServiceImpl` like this:
+    ```kotlin
+     @Service
+     class CustomerServiceImpl(val customerRepository: CustomerRepository): CustomerService {
+     
+         override fun create(createCustomerRequest: CreateCustomerRequest): CustomerResponse {
+     
+             val customer = Customer (
+                     id = createCustomerRequest.id,
+                     firstName = createCustomerRequest.firstName,
+                     lastName = createCustomerRequest.lastName,
+                     address = createCustomerRequest.address,
+                     createdAt = Date(),
+                     updatedAt = null
+             )
+     
+             customerRepository.save(customer);
+     
+             return convertCustomerToCustomerResponse(customer);
+         }
+     
+         override fun get(id: String): CustomerResponse {
+             val customer = customerRepository.findByIdOrNull(id);
+             if(customer == null) {
+                 throw NotFoundException();
+             } else {
+                 return convertCustomerToCustomerResponse(customer);
+             }
+         }
+     
+         private fun convertCustomerToCustomerResponse(customer: Customer): CustomerResponse {
+             return CustomerResponse(
+                     id = customer.id,
+                     firstName = customer.firstName,
+                     lastName = customer.lastName,
+                     address = customer.address,
+                     createdAt = customer.createdAt,
+                     updatedAt = customer.updatedAt
+             )
+         }
+       }
+     ```    
+3. Modify `CustomerController` and add code:
+   ```kotlin
+    @GetMapping(
+                value = ["/{customerId}"],
+                produces = ["application/json"],
+        )
+        fun getCustomer(@PathVariable("customerId") id: String): WebResponse<CustomerResponse> {
+            val customerResponse = customerService.get(id);
+            return WebResponse(
+                    code = 200,
+                    status = "OK",
+                    data = customerResponse
+            )
+        }
+    ```   
+4. Check Point #3     
+
+### Update Customer
+1. Add a new file `CutomerUpdateRequest` in package `model`
+   ```kotlin
+    data class UpdateCustomerRequest (
+    
+        @field:NotBlank
+        val firstName: String?,
+    
+        @field:NotBlank
+        val lastName: String?,
+    
+        @field:NotBlank
+        val address: String?,
+    )
+    ``` 
+2. Modify `CustomerService`:
+   ```kotlin
+   fun update(id: String, updateCustomerRequest: UpdateCustomerRequest): CustomerResponse 
+    ```    
+3. Modify `Customer`:
+   ```kotlin
+   @Column(name = "first_name")
+   var firstName: String,
+
+   @Column(name = "last_name")
+   var lastName: String,
+
+   @Column(name = "address")
+   var address: String,
+
+   @Column(name = "created_at")
+   var createdAt: Date,
+
+   @Column(name = "updated_at")
+   var updatedAt: Date? 
+    ```
+4. Modify `CustomerServiceImpl`:
+   ```kotlin
+   override fun update(id: String, updateCustomerRequest: UpdateCustomerRequest): CustomerResponse {
+           val customer = customerRepository.findByIdOrNull(id) ?: throw NotFoundException();
+   
+           validationUtil.validate(updateCustomerRequest);
+   
+           customer.apply {
+               firstName = updateCustomerRequest.firstName!!
+               lastName = updateCustomerRequest.lastName!!
+               address = updateCustomerRequest.address!!
+               updatedAt = Date()
+           }
+   
+           customerRepository.save(customer);
+           return convertCustomerToCustomerResponse(customer);
+       } 
+    ```   
+5. Modify `CustomerController`:
+   ```kotlin
+   @PutMapping(
+               value = ["/{customerId}"],
+               produces = ["application/json"],
+               consumes = ["application/json"]
+       )
+       fun updateCustomer(@PathVariable("customerId") id: String,
+                          @RequestBody updateCustomerRequest: UpdateCustomerRequest): WebResponse<CustomerResponse> {
+           val customerResponse = customerService.update(id, updateCustomerRequest)
+           return WebResponse(
+                   code = 200,
+                   status = "OK",
+                   data = customerResponse
+           )
+       } 
+    ``` 
+6. Check Point #4    
+
+### Delete Customer
+1. Modify `CustomerService`:
+   ```kotlin
+   fun delete(id: String)
+    ```    
+2. Modify `CustomerServiceImpl`:
+   ```kotlin
+   override fun delete(id: String) {
+           val customer = findCustomerByIdOrThrowNotFound(id);
+           customerRepository.delete(customer);
+       }
+    ```   
+5. Modify `CustomerController`:
+   ```kotlin
+   @DeleteMapping(
+               value = ["/{customerId}"],
+               produces = ["application/json"]
+       )
+       fun deleteCustomer(@PathVariable("customerId") id: String): WebResponse<String> {
+           customerService.delete(id);
+           return WebResponse(
+                   code = 200,
+                   status = "OK",
+                   data = "$id Success Deleted"
+           )
+       }
+    ``` 
+6. Check Point #5
+
+### List Customer
+1. Add a new file `ListCustomerRequest` in package `model`
+   ```kotlin
+    data class ListCustomerRequest (
+            val page: Int,
+    
+            val size: Int
+    )
+    ``` 
+2. Modify `CustomerService`:
+   ```kotlin
+   fun list(listCustomerRequest: ListCustomerRequest): List<CustomerResponse>
+    ```    
+3. Modify `CustomerServiceImpl`:
+   ```kotlin
+   override fun list(listCustomerRequest: ListCustomerRequest): List<CustomerResponse> {
+           val page = customerRepository.findAll(PageRequest.of(listCustomerRequest.page, listCustomerRequest.size));
+           val customers: List<Customer> = page.get().collect(Collectors.toList())
+           return customers.map { convertCustomerToCustomerResponse(it) }
+       }
+    ```   
+4. Modify `CustomerController`:
+   ```kotlin
+   @GetMapping(
+               value = [""],
+               produces = ["application/json"]
+       )
+       fun listCustomer(@RequestParam(value = "size", defaultValue = "10") size: Int,
+                        @RequestParam(value = "page", defaultValue = "0") page: Int): WebResponse<List<CustomerResponse>> {
+           val request = ListCustomerRequest(page = page, size = size);
+           val responses = customerService.list(request)
+           return WebResponse(
+                   code = 200,
+                   status = "OK",
+                   data = responses
+           )
+       }
+    ``` 
+5. Check Point #6  
+
+  
     
 ## API Spec
 
@@ -270,7 +554,7 @@ Response:
 
 ### List Customer
 - Request: GET
-- Endpoint : `/api/customers`
+- Endpoint : `/api/customers?size=size&page=page`
 - Header :
     - Content-Type: application/json
 - Query Param :
@@ -296,16 +580,6 @@ Response:
 ```json
   {
     "code": "Number",
-    "Status": "String",
-    "Data": [
-        {
-          "id": "String",
-          "firstName": "String",
-          "lastName": "String",
-          "address": "String",
-          "createdAt": "Date",
-          "updatedAt": "Date"
-        } 
-    ]    
+    "Status": "String"
   }
   ```

@@ -18,17 +18,17 @@ data class Customer (
         val id: String,
 
         @Column(name = "first_name")
-        val firstName: String,
+        var firstName: String,
 
         @Column(name = "last_name")
-        val lastName: String,
+        var lastName: String,
 
         @Column(name = "address")
-        val address: String,
+        var address: String,
 
         @Column(name = "created_at")
-        val createdAt: Date,
+        var createdAt: Date,
 
         @Column(name = "updated_at")
-        val updatedAt: Date?
+        var updatedAt: Date?
 )
